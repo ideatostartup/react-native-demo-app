@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import {
+  Alert,
   AppRegistry,
   Button,
   Dimensions,
@@ -11,6 +12,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import SwipeCards from 'react-native-swipe-cards';
+import ScrollableTabView, {
+  DefaultTabBar,
+} from 'react-native-scrollable-tab-view';
 
 const { width } = Dimensions.get('window');
 
@@ -56,23 +61,30 @@ const styles = StyleSheet.create({
   },
 });
 
+const subReddit = { slug: 'aww', name: 'Aww' };
+
 export default class App extends Component {
   state = {
+    loading: true,
     loggedIn: false,
     password: '',
     posts: [],
+    approvedPosts: [],
+    rejectedPosts: [],
     showErrorMessage: false,
     username: '',
   };
 
   async componentDidMount() {
     const posts = await this.getPostsFromApi();
-    this.setState({ posts });
+    this.setState({ posts, loading: false });
   }
 
   getPostsFromApi = async () => {
     try {
-      let response = await fetch('https://www.reddit.com/r/aww.json');
+      let response = await fetch(
+        `https://www.reddit.com/r/${subReddit.slug}.json`,
+      );
       let responseJson = await response.json();
       return responseJson.data.children.map(child => child.data);
     } catch (error) {
@@ -90,6 +102,22 @@ export default class App extends Component {
         this.setState({ showErrorMessage: false });
       }, 2000);
     }
+  };
+
+  handleYup = post => {
+    const { posts, approvedPosts } = this.state;
+    this.setState({
+      approvedPosts: [...approvedPosts, post],
+      posts: posts.filter(p => p.name !== post.name),
+    });
+  };
+
+  handleNope = post => {
+    const { posts, rejectedPosts } = this.state;
+    this.setState({
+      rejectedPosts: [...rejectedPosts, post],
+      posts: posts.filter(p => p.name !== post.name),
+    });
   };
 
   renderPost = post => {
@@ -113,27 +141,71 @@ export default class App extends Component {
     );
   };
 
+  renderNoMoreCards = () =>
+    <View>
+      <Text>Nothing more to see.</Text>
+    </View>;
+
   render() {
     const {
       username,
       password,
+      loading,
       loggedIn,
       posts,
+      approvedPosts,
+      rejectedPosts,
       showErrorMessage,
     } = this.state;
+
+    const All = () =>
+      loading
+        ? <View style={[styles.centered, { flex: 1 }]}>
+            <Text>Loading...</Text>
+          </View>
+        : <SwipeCards
+            cards={posts}
+            renderCard={post => this.renderPost(post)}
+            renderNoMoreCards={() => this.renderNoMoreCards()}
+            handleYup={this.handleYup}
+            handleNope={this.handleNope}
+            yupText="Approved"
+            nopeText="Rejected"
+            onClickHandler={() => {
+              Alert.alert('Swipe left to reject or swipe right to approve');
+            }}
+          />;
+
+    const Approved = () =>
+      <FlatList
+        data={approvedPosts}
+        renderItem={({ item }) => this.renderPost(item)}
+      />;
+
+    const Rejected = ({ data }) =>
+      <FlatList
+        data={rejectedPosts}
+        renderItem={({ item }) => this.renderPost(item)}
+      />;
+
     return (
       <View style={styles.container}>
         {loggedIn
           ? <View>
               <View style={styles.navbar}>
                 <Text style={styles.title}>
-                  Welcome, {username}!
+                  Welcome, {username} to {subReddit.name}!
                 </Text>
               </View>
-              <FlatList
-                data={posts}
-                renderItem={({ item }) => this.renderPost(item)}
-              />
+              <ScrollableTabView
+                style={{ marginTop: 20 }}
+                renderTabBar={() => <DefaultTabBar />}
+                locked
+              >
+                <All tabLabel="All" />
+                <Approved tabLabel="Approved" />
+                <Rejected tabLabel="Rejected" />
+              </ScrollableTabView>
             </View>
           : <View style={styles.centered}>
               <View style={styles.loginForm}>
