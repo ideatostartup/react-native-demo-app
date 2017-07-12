@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
 export default function Post({ post }) {
   const { name, title, thumbnail, thumbnail_height, thumbnail_width } = post;
   return (
-    <View style={styles.post} key={name}>
+    <View style={styles.post}>
       <Text>
         {title}
       </Text>

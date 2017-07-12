@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import SwipeCards from 'react-native-swipe-cards';
 
+import EmptyScreen from './EmptyScreen';
 import Post from './Post';
 
 const styles = StyleSheet.create({
@@ -13,11 +14,6 @@ const styles = StyleSheet.create({
 });
 
 export default class SwipeableList extends Component {
-  renderNoMoreCards = () =>
-    <View>
-      <Text>Nothing more to see.</Text>
-    </View>;
-
   handleOnClick = () => {
     Alert.alert('Swipe left to reject or swipe right to approve');
   };
@@ -35,7 +31,7 @@ export default class SwipeableList extends Component {
       <SwipeCards
         cards={posts}
         renderCard={post => <Post post={post} />}
-        renderNoMoreCards={this.renderNoMoreCards}
+        renderNoMoreCards={EmptyScreen}
         handleYup={onApprove}
         handleNope={onReject}
         yupText="Approved"

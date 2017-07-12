@@ -69,6 +69,7 @@ export default class Login extends Component {
             style={styles.input}
             autoCapitalize="none"
             placeholder="Password"
+            secureTextEntry
             onChangeText={password => this.setState({ password })}
             value={password}
           />
