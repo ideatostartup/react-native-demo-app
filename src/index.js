@@ -3,6 +3,9 @@ import {
   AppRegistry,
   Button,
   Dimensions,
+  FlatList,
+  Image,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +17,7 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 20 : 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#eee',
@@ -39,14 +43,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  navbar: {
+    backgroundColor: 'white',
+    height: 40,
+    width,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
 
 export default class App extends Component {
   state = {
-    username: '',
     loggedIn: false,
     password: '',
+    posts: [],
     showErrorMessage: false,
+    username: '',
+  };
+
+  async componentDidMount() {
+    const posts = await this.getPostsFromApi();
+    this.setState({ posts });
+  }
+
+  getPostsFromApi = async () => {
+    try {
+      let response = await fetch('https://www.reddit.com/r/aww.json');
+      let responseJson = await response.json();
+      return responseJson.data.children.map(child => child.data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   login = () => {
@@ -61,25 +92,62 @@ export default class App extends Component {
     }
   };
 
+  renderPost = post => {
+    const { name, title, thumbnail, thumbnail_height, thumbnail_width } = post;
+    return (
+      <View
+        style={[styles.centered, { margin: 10, backgroundColor: 'white' }]}
+        key={name}
+      >
+        <Text>
+          {title}
+        </Text>
+        <Image
+          style={{
+            height: thumbnail_height,
+            width: thumbnail_width,
+          }}
+          source={{ uri: thumbnail }}
+        />
+      </View>
+    );
+  };
+
   render() {
-    const { username, password, loggedIn, showErrorMessage } = this.state;
+    const {
+      username,
+      password,
+      loggedIn,
+      posts,
+      showErrorMessage,
+    } = this.state;
     return (
       <View style={styles.container}>
         {loggedIn
-          ? <View />
+          ? <View>
+              <View style={styles.navbar}>
+                <Text style={styles.title}>
+                  Welcome, {username}!
+                </Text>
+              </View>
+              <FlatList
+                data={posts}
+                renderItem={({ item }) => this.renderPost(item)}
+              />
+            </View>
           : <View style={styles.centered}>
               <View style={styles.loginForm}>
                 <Text style={styles.welcome}>Welcome!</Text>
                 <TextInput
                   style={styles.input}
-                  autoCapitalize={false}
+                  autoCapitalize="none"
                   placeholder="Username"
                   onChangeText={username => this.setState({ username })}
                   value={username}
                 />
                 <TextInput
                   style={styles.input}
-                  autoCapitalize={false}
+                  autoCapitalize="none"
                   placeholder="Password"
                   onChangeText={password => this.setState({ password })}
                   value={password}
